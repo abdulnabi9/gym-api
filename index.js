@@ -12,19 +12,12 @@ const PORT = process.env.PORT || 5000; // Railway provides PORT
 app.use(cors());
 app.use(express.json()); // Parse JSON bodies
 
-// MongoDB connection
 const MONGO_URL = process.env.MONGO_URL;
-if (!MONGO_URL) {
-  console.error("❌ MONGO_URL is not set!");
-  process.exit(1);
-}
 
-mongoose.connect(MONGO_URL) // No deprecated options needed
+mongoose.connect(MONGO_URL)
   .then(() => console.log("✅ MongoDB connected"))
-  .catch(err => {
-    console.error("❌ MongoDB connection error:", err);
-    process.exit(1);
-  });
+  .catch(err => console.error("❌ MongoDB connection error:", err));
+
 
 // Mongoose Schema & Model
 const memberSchema = new mongoose.Schema({
