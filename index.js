@@ -1,39 +1,33 @@
-// Load environment variables
-require('dotenv').config();
+// index.js
+require('dotenv').config(); // Load .env first
 
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000; // Railway provides PORT
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // parse JSON body
+app.use(express.json()); // Parse JSON bodies
 
-// Ensure MONGO_URL exists
-if (!process.env.MONGO_URL) {
-  console.error("❌ MONGO_URL environment variable is not set!");
+// MongoDB connection
+const MONGO_URL = process.env.MONGO_URL;
+if (!MONGO_URL) {
+  console.error("❌ MONGO_URL is not set!");
   process.exit(1);
 }
 
-// Connect to MongoDB Atlas
-mongoose.connect(process.env.MONGO_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => {
-    console.log("✅ MongoDB connected");
-    seedDatabase(); // Seed initial members
-  })
+mongoose.connect(MONGO_URL) // No deprecated options needed
+  .then(() => console.log("✅ MongoDB connected"))
   .catch(err => {
     console.error("❌ MongoDB connection error:", err);
     process.exit(1);
   });
 
-// Schema & Model
-const MemberSchema = new mongoose.Schema({
+// Mongoose Schema & Model
+const memberSchema = new mongoose.Schema({
   name: String,
   email: String,
   phone: String,
@@ -41,29 +35,16 @@ const MemberSchema = new mongoose.Schema({
   joinDate: { type: Date, default: Date.now },
 });
 
-const Member = mongoose.model("Member", MemberSchema);
+const Member = mongoose.model("Member", memberSchema);
 
-// Seed sample members if collection is empty
-async function seedDatabase() {
-  const count = await Member.countDocuments();
-  if (count === 0) {
-    console.log("🌱 Seeding initial members...");
-    const sampleMembers = [
-      { name: "John Doe", email: "john@example.com", phone: "1234567890", membershipType: "Gold" },
-      { name: "Jane Smith", email: "jane@example.com", phone: "0987654321", membershipType: "Silver" },
-      { name: "Mike Johnson", email: "mike@example.com", phone: "1112223333", membershipType: "Platinum" }
-    ];
-    await Member.insertMany(sampleMembers);
-    console.log("✅ Sample members added");
-  }
-}
+// Routes
 
-// CRUD Routes
+// Test route
+app.get("/", (req, res) => res.send("API is running"));
 
-// CREATE Member
+// CREATE member
 app.post("/members", async (req, res) => {
   try {
-    console.log("👉 Body received:", req.body);
     const member = new Member(req.body);
     await member.save();
     res.status(201).json(member);
@@ -73,7 +54,7 @@ app.post("/members", async (req, res) => {
   }
 });
 
-// READ All Members
+// READ all members
 app.get("/members", async (req, res) => {
   try {
     const members = await Member.find();
@@ -84,7 +65,7 @@ app.get("/members", async (req, res) => {
   }
 });
 
-// READ Single Member
+// READ single member
 app.get("/members/:id", async (req, res) => {
   try {
     const member = await Member.findById(req.params.id);
@@ -95,7 +76,7 @@ app.get("/members/:id", async (req, res) => {
   }
 });
 
-// UPDATE Member
+// UPDATE member
 app.put("/members/:id", async (req, res) => {
   try {
     const member = await Member.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -106,7 +87,7 @@ app.put("/members/:id", async (req, res) => {
   }
 });
 
-// DELETE Member
+// DELETE member
 app.delete("/members/:id", async (req, res) => {
   try {
     const member = await Member.findByIdAndDelete(req.params.id);
@@ -117,5 +98,5 @@ app.delete("/members/:id", async (req, res) => {
   }
 });
 
-// Start Server
+// Start server
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
