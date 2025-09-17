@@ -1,4 +1,6 @@
-require('dotenv').config(); 
+// Load environment variables
+require('dotenv').config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -10,25 +12,25 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json()); // parse JSON body
 
-// // Connect to MongoDB Atlas using environment variable
-// mongoose.connect(process.env.MONGO_URL, {
-//   useNewUrlParser: true,
-//   useUnifiedTopology: true,
-// })
-//   .then(() => console.log("✅ MongoDB connected"))
-//   .catch(err => console.error("❌ MongoDB connection error:", err));
+// Ensure MONGO_URL exists
+if (!process.env.MONGO_URL) {
+  console.error("❌ MONGO_URL environment variable is not set!");
+  process.exit(1);
+}
 
-
-
-
+// Connect to MongoDB Atlas
 mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch(err => console.error("❌ MongoDB connection error:", err));
-
-
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    seedDatabase(); // Seed initial members
+  })
+  .catch(err => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
 
 // Schema & Model
 const MemberSchema = new mongoose.Schema({
@@ -41,12 +43,27 @@ const MemberSchema = new mongoose.Schema({
 
 const Member = mongoose.model("Member", MemberSchema);
 
+// Seed sample members if collection is empty
+async function seedDatabase() {
+  const count = await Member.countDocuments();
+  if (count === 0) {
+    console.log("🌱 Seeding initial members...");
+    const sampleMembers = [
+      { name: "John Doe", email: "john@example.com", phone: "1234567890", membershipType: "Gold" },
+      { name: "Jane Smith", email: "jane@example.com", phone: "0987654321", membershipType: "Silver" },
+      { name: "Mike Johnson", email: "mike@example.com", phone: "1112223333", membershipType: "Platinum" }
+    ];
+    await Member.insertMany(sampleMembers);
+    console.log("✅ Sample members added");
+  }
+}
+
 // CRUD Routes
 
 // CREATE Member
 app.post("/members", async (req, res) => {
   try {
-    console.log("👉 Body received:", req.body); // log body
+    console.log("👉 Body received:", req.body);
     const member = new Member(req.body);
     await member.save();
     res.status(201).json(member);
